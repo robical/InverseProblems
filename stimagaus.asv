@@ -1,0 +1,6 @@
+function [sigmam]=stimagaus(a,b,t,y,varia)
+
+stimq=(((a*t+b-y).^2)/varia);
+somma=sum(stimq);
+sigmam=exp(-1/2*somma);
+

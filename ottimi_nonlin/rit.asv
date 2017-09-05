@@ -1,0 +1,12 @@
+function yr=rit(y,d,ltot)
+
+%s è la forma d'onda 
+%d è il ritardo da introdurre
+%ltot= durata totale
+
+%taglio solo la forma d'onda
+
+if(d>=0)
+yr=[zeros(1,d) y zeros(1,ltot-length(y)-d)];
+else
+    

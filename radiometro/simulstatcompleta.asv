@@ -1,0 +1,100 @@
+%Scopo: Simulazione statistica dell'effetto del rumore sui dati senza separarlo
+%       sulle singole componenti (Problema radiometrico)
+%
+%Variabili IN: nessuna
+%
+%Variabili OUT: plotta un grafico che mostra andamento delle componenti
+%rumorose in tutte le realizzazioni e le componenti del modello invertite
+%dai dati rumorosi
+%
+%
+%
+%
+%
+%
+%
+
+close all;
+clear all;
+clc;
+
+
+M=3;
+l=1; %larghezza cella 
+a=2; %altezza cella
+% angoli utilizzati nella misurazione
+temp=0;
+h=linspace(90,30,57);
+for h=90:-1:30 %angoli di puntamento ai quali effettuo le misurazioni
+    temp=[temp; h];
+end
+ang(1:length(temp)-1,1)=temp(2:length(temp));
+N=length(ang);
+m=[0.1;1;0.1];
+G=jacob(ang,l,a,M,N);
+dc=G*m;
+Gp=(G'*G)\G';
+v=1:100;
+
+for i=1:100
+    n(:,i)=0.05*max(dc)*randn(N,1); %rumore gaussiano
+    dn(:,i)=n(:,i)+dc; %dati rumorosi
+    mric(:,i)=Gp*dn(:,i);
+end
+
+%figure, plot(v,dn(:,1:100)), title('realizzazioni di dati rumorosi')
+figure, plot(v,mric(1,1:100),'r'), title('Stime delle componenti del modello da dati rumorosi (1-rossa 2-verde 3-blu)'), hold on,
+plot(v,mric(2,1:100),'g'),hold on,
+plot(v,mric(3,1:100),'b')
+
+%covarianza dei dati rumorosi
+cov_dati=diag(cov(dn')); %covarianza del rumore perchè cov toglie il valore medio sulle realizzazioni
+%il rumore sulle singole componenti dei dati è la radice di cov_dati (ho preso solo i valori diagonali della matrice di covarianza, perchè di suppone
+%che il vettore del rumore abbia componenti incorrelate), la deviazione
+%standard nei dati sarà il rapporto tra deviaz standard del rumore e valore
+%medio dei dati
+dev_dati=sqrt(cov_dati)./mean(mean(dn'));
+
+%SNR in dB
+SNR=-20*log10(dev_dati);
+disp('SNR di ogni componente dei dati:');
+disp(SNR)
+
+%covarianza del modello
+cov_mod=diag(cov(mric'));
+dev_mod=sqrt(cov_mod)./mean(mean(mric'));
+
+disp('Deviazione standard delle componenti del modello, nell''ordine: ')
+disp(dev_mod)
+disp('Deviazione standard delle componenti dei dati, nell''ordine: ')
+disp(dev_dati)
+
+%è immediato verificare che cov_mod=Gp*cov_dati*Gp'
+disp('La covarianza del modello completa è: ')
+disp(cov(mric'))
+disp('La covarianza del modello calcolata attraverso la conoscenza della covarianza dei dati è: ')
+disp(Gp*(cov(dn')*Gp'))
+
+%analisi via SVD conferma che la componente meno influenzata dal rumore è
+%proprio la terza componente del modello, alla quale punta il primo
+%autovettore dello spazio del modello, al quale corrisponde l'autovalore
+%più grande
+
+% Prova con SVD troncata
+
+[U D V]=svd(G);
+
+% for i=1:100
+%     n(:,i)=0.05*max(dc)*randn(N,1); %rumore gaussiano
+%     dn(:,i)=n(:,i)+dc; %dati rumorosi
+% end
+
+mric=zeros(length(m),100);
+for i=1:100
+    
+    mric(:,i)=mric(:,i)+V(:,1)*(1/D(1,1))*U(:,1)'*dn(:,i)+V(:,3)*(1/D(3,3))*U(:,3)'*dn(:,i);
+    
+end
+
+figure,plot(1:100,mric(1:2,1:100)),title('Parametri modello invertiti con SVD troncata');
+
